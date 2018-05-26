@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      @import url('https://fonts.googleapis.com/css?family=Poppins:300,400,700');
+      
+      body {
+        font-family: "Poppins";
+        color: white;
+        background-color: black;
+      }
+      
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+      
+      .switch input {display:none;}
+      
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #757575;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+      
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        -webkit-transition: .4s;
+        transition: .4s;
+      }
+      
+      input:checked + .slider {
+        background-color: cyan;
+      }
+      
+      input:focus + .slider {
+        box-shadow: 0 0 1px cyan;
+      }
+      
+      input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+      }
+      .slider.round {
+        border-radius: 34px;
+      }
+      
+      .slider.round:before {
+        border-radius: 50%;
+      }
+      
+      .underline {
+        height: 2px;
+        width: 100%;
+        background-color: black;
+        display: block;
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="display: flex; justify-content: center;">
+      <div style="width: 45%; display: inline-block; text-align: center;">
+        <div>Repeat<span class="underline"></span></div>
+        <div>All
+          <label class="switch">
+            <input type="checkbox" id="repeat">
+            <span class="slider round"></span>
+          </label>
+          One
+        </div>
+      </div>
+      <div style="width: 45%; display: inline-block; text-align: center;">
+        <div>Shuffle<span class="underline"></span></div>
+        <div>Off
+          <label class="switch">
+            <input type="checkbox" id="shuffle" onchange="Shuffle()">
+            <span class="slider round"></span>
+          </label>
+          On
+        </div>
+      </div>
+    </div>
+    <p></p>
+    <p></p>
+    <div style="display: flex; justify-content: center;">
+      <div id="player"></div>
+    </div>
+    <p></p>
+    <p></p>
+    <div style="display: flex; justify-content: center;">
+      <div style="width: 45%; display: inline-block; text-align: center; background-color: #9e9e9e;">
+        <input style="width: 100%; height: 30px; background-color: #2b2b2b; color: white;" type="button" value=" << " onclick="back()" />
+      </div>
+      <div style="width: 45%; display: inline-block; text-align: center;">
+        <input style="width: 100%; height: 30px; background-color: #2b2b2b; color: white;" type="button" value=" >> " onclick="next()" />
+      </div>
+    </div>
+    <p></p>
+    <p></p>
+    <p></p>
+    <div style="width: 100%; text-align: center;" id="tracks"></div>
+    <script src="https://connect.soundcloud.com/sdk/sdk-3.2.1.js"></script>
+    <script src="https://w.soundcloud.com/player/api.js"></script>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+      //initialize variables for later use
+      var music = [],
+          musicSeq = [],
+          musicSh = [],
+          i = -1,
+          widget;
+      
+      //get links from sheet    
+      google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).doSomeShit();
+      //after getting links, fill variables
+      function onSuccess(links) {
+        music = links;
+        document.getElementById('tracks').innerHTML = "Track 0/" + music.length;
+        musicSeq = music.slice();
+        musicSh = music.slice();
+        for (var i = musicSh.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = musicSh[i];
+            musicSh[i] = musicSh[j];
+            musicSh[j] = temp;
+        }
+        return music, musicSeq, musicSh;
+      }
+      //if there's an error, show it to the user
+      function onFailure(e) {
+        document.getElementById('player').innerHTML = 'Error: ' + e;
+      }
+      //autoplay after two seconds
+      window.onload = function() {
+        setTimeout(next, 2000);
+      }
+      //initialize Soundcloud client - insert your client ID here (details can be found on github);
+      SC.initialize({
+        client_id: '<YOUR CLIENT ID HERE>'
+      });
+      
+      function Shuffle() {
+        if (document.getElementById("shuffle").checked) music = musicSh.slice();
+        else music = musicSeq.slice();
+        return music;
+      }
+      
+      function next() {
+        if (i >= music.length - 1) {
+          google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).doSomeShit();
+          clean();
+          i = -1;
+          return i;
+        }
+        else {
+          i++;
+          if (document.getElementById("repeat").checked) i--;
+          document.getElementById("tracks").innerHTML = "Track " + (i+1) + "/" + music.length; 
+          playList(music[i]);
+          return i;
+        }
+      }
+      
+      function back() {
+        if (i == 0) return;
+        else {
+          i--;
+          document.getElementById('tracks').innerHTML = "Track " + (i+1) + "/" + music.length; 
+          playList(music[i]);
+          return i;
+        }
+      }
+      
+      function clean() {
+        document.getElementById("player").empty;
+        document.getElementById("player").innerHTML = "You've reached the end of the playlist!<br> Hit >> to start back at the beginning.";
+      }
+      
+      function playList(link) {
+        if (link.indexOf("soundcloud.com") > -1) {
+          document.getElementById("player").empty;
+          SC.oEmbed(link, {
+            auto_play: true,
+            element: document.getElementById("player"),
+            maxheight: 300
+          }).then(function(embed) {
+            widget = SC.Widget(document.getElementsByTagName("iframe")[0]);
+            widget.bind(SC.Widget.Events.READY, function() {
+              widget.unbind(SC.Widget.Events.FINISH);
+              widget.bind(SC.Widget.Events.FINISH, function(fevent) {
+                next();
+              });
+              widget.unbind(SC.Widget.Events.ERROR);
+              widget.bind(SC.Widget.Events.ERROR, function(event) {
+                console.log(event);
+                next();
+              });
+            });
+          });
+        }
+        else if (link.indexOf("youtu") > -1) {
+          document.getElementById("player").empty;
+          document.getElementById("player").innerHTML = '<div id="yt"></div>';
+          if (link.indexOf("?v=") > -1) var id = link.split("?v=")[1];
+          else if (link.indexOf("youtu.be") > -1) var id = link.split(".be/")[1];
+          else {
+            var id = link.split("v%3D")[1];
+            id = id.substring(0,11);
+          }
+          var yt = new YT.Player('yt', {
+            height: '300',
+            width: '300',
+            videoId: id,
+            events: {
+              'onReady': onPlayerReady,
+              'onStateChange': onPlayerStateChange,
+              'onError': onPlayerError
+            }
+          });
+        }
+        else console.log("Unexpected URL: " + link);
+      }
+      
+      function onPlayerReady(event) {
+        event.target.playVideo();
+      }
+      
+      function onPlayerStateChange(event) {
+        if (event.data == 0) next();
+      }
+      
+      function onPlayerError(event) {
+        console.log(event.data);
+        next();
+      }
+      
+    </script>
+  </body>
+</html>
