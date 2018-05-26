@@ -1,8 +1,8 @@
 function openDialog() {
   //This function opens the sidebar where the music player is displayed and controlled
-  //It uses whichever sheet the user is targeting to pull links from and displays the html in the Index.html file
+  //It uses whichever sheet the user is targeting to pull links from and displays the html in the index.html file
   var sheet = SpreadsheetApp.getActive().getActiveSheet().getName();
-  var html = HtmlService.createHtmlOutputFromFile('Index').setTitle("You're listening to " + sheet);
+  var html = HtmlService.createHtmlOutputFromFile('index').setTitle("You're listening to " + sheet);
   SpreadsheetApp.getUi().showSidebar(html);
 }
 
